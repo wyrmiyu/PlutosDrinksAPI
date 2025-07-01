@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.Objects;
 
 public class DrinkAdditionManager implements SimpleSynchronousResourceReloadListener {
 
@@ -57,12 +58,17 @@ public class DrinkAdditionManager implements SimpleSynchronousResourceReloadList
     }
 
     public static ResourceLocation getId(DrinkAddition addition) {
+        if (addition == null) {
+            PDAPI.LOGGER.warn("DrinkAdditionManager.getId called with null addition, returning empty");
+            return PDAPI.asId("empty");
+        }
         for (Map.Entry<ResourceLocation, DrinkAddition> entry : REGISTRY.entrySet()) {
-            if (addition.equals(entry.getValue())) {
+            if (Objects.equals(entry.getValue(), addition)) {
                 return entry.getKey();
             }
         }
-        return new ResourceLocation("empty");
+        PDAPI.LOGGER.error("Unregistered drink addition: {}, returning empty", addition);
+        return PDAPI.asId("empty");
     }
 
     public static DrinkAddition get(ResourceLocation id) {
