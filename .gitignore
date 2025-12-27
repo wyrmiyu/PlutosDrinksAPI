@@ -23,6 +23,10 @@ classes/
 bin/
 .classpath
 .project
+*.code-workspace
+
+# Link to CoffeeMod
+PlutosCoffeeMod-Fabric
 
 # macos
 
@@ -38,3 +42,6 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# additional
+debug/

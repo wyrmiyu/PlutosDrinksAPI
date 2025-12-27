@@ -36,6 +36,14 @@ public class DealDamageAction implements OnDrinkAction {
         return OnDrinkSerializers.DEAL_DAMAGE;
     }
 
+    public float getAmount() {
+        return amount;
+    }
+
+    public ResourceKey<DamageType> getSource() {
+        return source;
+    }
+
     public static class Serializer implements OnDrinkSerializer<DealDamageAction> {
 
         public static final MapCodec<DealDamageAction> CODEC = RecordCodecBuilder.mapCodec(instance ->

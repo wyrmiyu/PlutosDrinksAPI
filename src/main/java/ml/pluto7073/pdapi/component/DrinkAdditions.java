@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.mojang.serialization.Codec;
 import ml.pluto7073.pdapi.addition.DrinkAddition;
 import ml.pluto7073.pdapi.addition.DrinkAdditionManager;
-import ml.pluto7073.pdapi.util.DrinkUtil;
+import ml.pluto7073.pdapi.addition.action.OnDrinkAction;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -35,11 +35,18 @@ public record DrinkAdditions(List<DrinkAddition> additions) implements TooltipPr
     }
 
     public static DrinkAdditions of(List<ResourceLocation> additions) {
-        return new DrinkAdditions(additions.stream().map(DrinkAdditionManager::get).toList());
+        return new DrinkAdditions(additions.stream()
+                .map(DrinkAdditionManager::get)
+                .filter(addition -> addition != null)
+                .toList());
     }
 
     public static DrinkAdditions of(ResourceLocation addition) {
-        return new DrinkAdditions(List.of(DrinkAdditionManager.get(addition)));
+        DrinkAddition drinkAddition = DrinkAdditionManager.get(addition);
+        if (drinkAddition == null) {
+            return EMPTY;
+        }
+        return new DrinkAdditions(List.of(drinkAddition));
     }
 
     @Override
@@ -57,11 +64,84 @@ public record DrinkAdditions(List<DrinkAddition> additions) implements TooltipPr
                 order.add(id);
             }
         }
-        order.forEach(id -> tooltip.accept(Component.translatable(DrinkAdditionManager.get(id).getTranslationKey(), additionCounts.get(id)).withStyle(ChatFormatting.GRAY)));
-
+        
+        // Show addition names
+        order.forEach(id -> {
+            DrinkAddition addition = DrinkAdditionManager.get(id);
+            tooltip.accept(Component.translatable(addition.getTranslationKey(), additionCounts.get(id)).withStyle(ChatFormatting.GRAY));
+            
+            // Show effects for each addition (if any)
+            if (!addition.actions().isEmpty()) {
+                for (OnDrinkAction action : addition.actions()) {
+                    // Add indented effect description
+                    String effectDescription = getActionDescription(action);
+                    if (!effectDescription.isEmpty()) {
+                        tooltip.accept(Component.literal("  • " + effectDescription).withStyle(ChatFormatting.DARK_GRAY));
+                    }
+                }
+            }
+        });
+    }
+    
+    private String getActionDescription(OnDrinkAction action) {
+        if (action instanceof ml.pluto7073.pdapi.addition.action.ApplyStatusEffectAction statusAction) {
+            String effectName = Component.translatable(statusAction.getEffect().value().getDescriptionId()).getString();
+            int duration = statusAction.getDuration();
+            int amplifier = statusAction.getAmplifier();
+            
+            // Convert ticks to seconds for display
+            int seconds = duration / 20;
+            String durationText = seconds >= 60 ? String.format("%dm %ds", seconds / 60, seconds % 60) : String.format("%ds", seconds);
+            
+            if (amplifier > 0) {
+                return String.format("%s %s (%s)", effectName, getRomanNumeral(amplifier + 1), durationText);
+            } else {
+                return String.format("%s (%s)", effectName, durationText);
+            }
+        } else if (action instanceof ml.pluto7073.pdapi.addition.action.RestoreHungerAction hungerAction) {
+            int food = hungerAction.getFood();
+            int saturation = hungerAction.getSaturation();
+            if (saturation > 0) {
+                return String.format("Restores %d hunger + %d saturation", food, saturation);
+            } else {
+                return String.format("Restores %d hunger", food);
+            }
+        } else if (action instanceof ml.pluto7073.pdapi.addition.action.DealDamageAction damageAction) {
+            float amount = damageAction.getAmount();
+            return String.format("Deals %.1f damage", amount);
+        } else if (action instanceof ml.pluto7073.pdapi.addition.action.ChorusTeleportAction) {
+            return "Random teleportation";
+        } else if (action instanceof ml.pluto7073.pdapi.addition.action.ClearHarmfulEffectsAction) {
+            return "Clears harmful effects";
+        } else if (action instanceof ml.pluto7073.pdapi.addition.action.ApplyEffectRadiusAction) {
+            return "Applies area effect";
+        } else {
+            // Fallback for unknown action types
+            String className = action.getClass().getSimpleName();
+            return className.replace("Action", "").replaceAll("([A-Z])", " $1").trim();
+        }
+    }
+    
+    private String getRomanNumeral(int number) {
+        return switch (number) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            case 6 -> "VI";
+            case 7 -> "VII";
+            case 8 -> "VIII";
+            case 9 -> "IX";
+            case 10 -> "X";
+            default -> String.valueOf(number);
+        };
     }
 
     public DrinkAdditions withAddition(DrinkAddition addition) {
+        if (addition == null) {
+            return this; // Return unchanged if trying to add null
+        }
         return new DrinkAdditions(Util.copyAndAdd(additions, addition));
     }
 }

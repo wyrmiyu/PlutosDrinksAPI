@@ -33,6 +33,14 @@ public class RestoreHungerAction implements OnDrinkAction {
         return OnDrinkSerializers.RESTORE_HUNGER;
     }
 
+    public int getFood() {
+        return food;
+    }
+
+    public int getSaturation() {
+        return saturation;
+    }
+
     public static class Serializer implements OnDrinkSerializer<RestoreHungerAction> {
 
         public static final MapCodec<RestoreHungerAction> CODEC = RecordCodecBuilder.mapCodec(instance ->

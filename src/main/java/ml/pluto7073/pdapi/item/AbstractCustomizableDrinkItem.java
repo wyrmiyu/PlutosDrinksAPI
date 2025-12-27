@@ -4,13 +4,11 @@ import ml.pluto7073.pdapi.component.DrinkAdditions;
 import ml.pluto7073.pdapi.component.PDComponents;
 import ml.pluto7073.pdapi.util.DrinkUtil;
 import ml.pluto7073.pdapi.addition.DrinkAddition;
-import ml.pluto7073.pdapi.addition.DrinkAdditionManager;
 import ml.pluto7073.pdapi.addition.chemicals.ConsumableChemicalRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
@@ -24,9 +22,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.List;
 
 @MethodsReturnNonnullByDefault
@@ -116,10 +112,34 @@ public abstract class AbstractCustomizableDrinkItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag config) {
         super.appendHoverText(stack, context, tooltip, config);
 
-        if (config.isAdvanced() || config.isCreative()) ConsumableChemicalRegistry.forEach(handler ->
-                handler.appendTooltip(tooltip, getChemicalContent(handler.getName(), stack), stack));
+        // Always show caffeine content
+        int caffeineContent = getChemicalContent("caffeine", stack);
+        if (caffeineContent > 0) {
+            tooltip.add(Component.literal("  • Contains " + caffeineContent + "mg caffeine").withStyle(ChatFormatting.DARK_GRAY));
+        }
+
+        // Show other chemicals only in advanced/creative mode
+        if (config.isAdvanced() || config.isCreative()) {
+            ConsumableChemicalRegistry.forEach(handler -> {
+                if (!"caffeine".equals(handler.getName())) { // Skip caffeine since we already showed it
+                    handler.appendTooltip(tooltip, getChemicalContent(handler.getName(), stack), stack);
+                }
+            });
+        }
 
         stack.getOrDefault(PDComponents.ADDITIONS, DrinkAdditions.EMPTY).addToTooltip(context, tooltip::add, config);
+    }
+
+    @Override
+    public Component getName(ItemStack stack) {
+        // If there's already a custom name set (like from specialty drinks), use that
+        if (stack.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+            return stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+        }
+        
+        // Real cafe style: for regular drinks, just show the base name like "Latte"
+        // The ingredients are shown in the tooltip, not the name
+        return super.getName(stack);
     }
 
     public enum Temperature {

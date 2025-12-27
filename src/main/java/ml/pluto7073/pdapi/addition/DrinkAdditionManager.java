@@ -59,7 +59,7 @@ public class DrinkAdditionManager implements SimpleSynchronousResourceReloadList
 
     public static ResourceLocation getId(DrinkAddition addition) {
         if (addition == null) {
-            PDAPI.LOGGER.warn("DrinkAdditionManager.getId called with null addition, returning empty");
+            PDAPI.LOGGER.warn("DrinkAdditionManager.getId called with null addition, returning empty. Stack trace:", new Exception("Stack trace"));
             return PDAPI.asId("empty");
         }
         for (Map.Entry<ResourceLocation, DrinkAddition> entry : REGISTRY.entrySet()) {

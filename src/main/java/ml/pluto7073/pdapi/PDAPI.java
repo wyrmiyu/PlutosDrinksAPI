@@ -19,6 +19,7 @@ import ml.pluto7073.pdapi.util.DrinkUtil;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
@@ -58,6 +59,13 @@ public class PDAPI implements ModInitializer {
 
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new DrinkAdditionManager());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new SpecialtyDrinkManager());
+
+        // Sync registries to clients when they join
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            LOGGER.info("[PlutosDrinksAPI] Syncing drink additions to client: {}", handler.player.getName().getString());
+            DrinkAdditionManager.send(handler.player);
+            // SpecialtyDrinkManager sync is handled by ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS
+        });
 
         DrinkUtil.registerOldToNewConverter("Coffee/Additions", tag -> {
             if (!(tag instanceof ListTag list)) return tag;

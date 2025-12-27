@@ -38,6 +38,18 @@ public class ApplyStatusEffectAction implements OnDrinkAction {
         return OnDrinkSerializers.APPLY_STATUS_EFFECT;
     }
 
+    public Holder<MobEffect> getEffect() {
+        return effect;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public int getAmplifier() {
+        return amplifier;
+    }
+
     public static class Serializer implements OnDrinkSerializer<ApplyStatusEffectAction> {
 
         public static final MapCodec<ApplyStatusEffectAction> CODEC = RecordCodecBuilder.mapCodec(instance ->
